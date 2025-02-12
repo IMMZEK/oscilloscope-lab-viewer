@@ -163,21 +163,7 @@ class OscilloscopeViewer(tk.Tk):
             'volt1': {'line': None, 'value': None, 'active': False, 'label': None},
             'volt2': {'line': None, 'value': None, 'active': False, 'label': None}
         }
-        
-        # Initialize icons for file tree
-        self.folder_icon = tk.PhotoImage(data='''
-            R0lGODlhEAAQAIABAEBNYP///yH5BAEKAAEALAAAAAAQABAAAAIijI+py+0PowwKhgC
-            mXgr7bHUf42VhKJpYaqLnqq5uSmMFADs=
-        ''')
-        self.file_icon = tk.PhotoImage(data='''
-            R0lGODlhEAAQAIABAEBNYP///yH5BAEKAAEALAAAAAAQABAAAAIdjI+py+0Po5y02ouz
-            3rz7D4biSJbmiabqyrbuC4cFADs=
-        ''')
-        
-        # Initialize cursor state variables
-        self.cursor_placement_mode = None
-        self.last_cursor_click = None
-        
+
     def create_left_panel(self):
         """Create the left panel with all its components"""
         self.left_panel = ttk.Frame(self.content_frame, width=300)
@@ -454,54 +440,80 @@ class OscilloscopeViewer(tk.Tk):
         self.cursors[name] = {
             'line': line,
             'value': position,
-            'active': False
+            'active': False,
+            'label': None
         }
         
         # Add cursor label
         if vertical:
-            label = f'{name}: {position:.2e}s'
-            self.ax.text(
+            self.cursors[name]['label'] = self.ax.text(
                 position,
                 self.ax.get_ylim()[1],
-                label,
+                f'{name}: {position:.2e}s',
                 rotation=90,
                 color=color or self.time_cursor_color.get(),
-                va='top'
+                va='top',
+                ha='right',
+                backgroundcolor='#2b2b2b',
+                alpha=0.8
             )
         else:
-            label = f'{name}: {position:.3f}V'
-            self.ax.text(
+            self.cursors[name]['label'] = self.ax.text(
                 self.ax.get_xlim()[0],
                 position,
-                label,
+                f'{name}: {position:.3f}V',
                 color=color or self.volt_cursor_color.get(),
                 va='bottom',
-                ha='left'
+                ha='left',
+                backgroundcolor='#2b2b2b',
+                alpha=0.8
             )
-        
+            
     def remove_cursor(self, name):
         """Remove a cursor and its label from the plot"""
         cursor = self.cursors[name]
-        if cursor['line'] is not None:
-            cursor['line'].remove()
-            if cursor.get('label'):
+        try:
+            if cursor['line'] is not None:
+                cursor['line'].remove()
+        except (ValueError, AttributeError):
+            pass
+            
+        try:
+            if cursor['label'] is not None:
                 cursor['label'].remove()
-            cursor['line'] = None
-            cursor['label'] = None
-            cursor['value'] = None
-            cursor['active'] = False
+        except (ValueError, AttributeError):
+            pass
+            
+        cursor.update({
+            'line': None,
+            'label': None,
+            'value': None,
+            'active': False
+        })
 
     def update_cursor_measurements(self):
         """Update cursor measurements with better formatting"""
         if self.current_data is None:
             return
             
+        # First remove any existing measurement annotations
+        for artist in self.ax.texts[:]:
+            try:
+                artist.remove()
+            except ValueError:
+                pass  # Skip if artist was already removed
+            
         # Update cursor positions
         for name, cursor in self.cursors.items():
             if cursor['line'] is not None:
-                if cursor['label'] is not None:
-                    cursor['label'].remove()
-                
+                try:
+                    if cursor['label'] is not None:
+                        cursor['label'].remove()
+                        cursor['label'] = None
+                except (ValueError, AttributeError):
+                    pass  # Skip if label was already removed
+                    
+                # Create new label
                 if 'time' in name:
                     cursor['label'] = self.ax.text(
                         cursor['value'],
@@ -526,7 +538,7 @@ class OscilloscopeViewer(tk.Tk):
                         alpha=0.8
                     )
         
-        # Update delta measurements
+        # Update delta measurements with better cleanup
         if all(self.cursors[c]['value'] is not None for c in ['time1', 'time2']):
             delta_t = abs(self.cursors['time2']['value'] - self.cursors['time1']['value'])
             freq = 1/delta_t if delta_t != 0 else float('inf')
@@ -545,6 +557,9 @@ class OscilloscopeViewer(tk.Tk):
                 backgroundcolor='#2b2b2b',
                 alpha=0.8
             )
+        else:
+            self.delta_t_var.set("ΔT: --")
+            self.cursor_freq_var.set("1/ΔT: --")
             
         if all(self.cursors[c]['value'] is not None for c in ['volt1', 'volt2']):
             delta_v = abs(self.cursors['volt2']['value'] - self.cursors['volt1']['value'])
@@ -562,6 +577,8 @@ class OscilloscopeViewer(tk.Tk):
                 backgroundcolor='#2b2b2b',
                 alpha=0.8
             )
+        else:
+            self.delta_v_var.set("ΔV: --")
         
         self.canvas.draw()
 
@@ -707,60 +724,77 @@ class OscilloscopeViewer(tk.Tk):
         if not self.data_folder:
             return
             
-        def insert_path(parent, path):
-            """Recursively insert a path into the tree"""
-            parts = os.path.relpath(path, self.data_folder).split(os.sep)
-            current_parent = parent
-            current_path = self.data_folder
-            
-            for part in parts[:-1]:  # Process all but the last part (file)
-                current_path = os.path.join(current_path, part)
-                # Check if this node already exists
-                found = False
-                for child in self.file_tree.get_children(current_parent):
-                    if self.file_tree.item(child)['text'] == part:
-                        current_parent = child
-                        found = True
-                        break
-                
-                if not found:
-                    current_parent = self.file_tree.insert(
-                        current_parent, 'end',
-                        text=part,
-                        values=(current_path,),
-                        tags=('folder',),
-                        open=True
-                    )
-            
-            # Insert the file
-            return current_parent
-            
         # Clear existing items
         for item in self.file_tree.get_children():
             self.file_tree.delete(item)
-        
-        # Walk through directory structure
-        for root, dirs, files in os.walk(self.data_folder):
-            # Sort directories and files
-            dirs.sort()
-            files.sort()
             
-            # Get the parent node for this directory
-            parent = insert_path("", root)
-            
-            # Add CSV files
+        # Collect all CSV files and their paths
+        all_files = []
+        for root, _, files in os.walk(self.data_folder):
             for file in files:
                 if file.upper().endswith('.CSV'):
                     full_path = os.path.join(root, file)
-                    self.file_tree.insert(
-                        parent,
-                        'end',
-                        text=file,
-                        values=(full_path,),
-                        tags=('file',)
-                    )
+                    rel_path = os.path.relpath(root, self.data_folder)
+                    all_files.append((rel_path, file, full_path))
         
-        # Configure tags
+        # Sort files to get folders at top
+        def sort_key(item):
+            rel_path, file, _ = item
+            # Use a tuple for sorting: (is_root, path_parts, filename)
+            path_parts = rel_path.split(os.sep)
+            return (rel_path == '.', len(path_parts), path_parts, file.upper())
+            
+        all_files.sort(key=sort_key)
+        
+        # Dictionary to keep track of folder nodes
+        folders = {}
+        
+        # Process all files
+        for rel_path, file, full_path in all_files:
+            if rel_path == '.':
+                # Root level files - add at bottom
+                continue
+            else:
+                # Create folder hierarchy if needed
+                parts = rel_path.split(os.sep)
+                current = ""
+                
+                # Create parent folders if they don't exist
+                for part in parts:
+                    parent = current
+                    current = os.path.join(current, part) if current else part
+                    
+                    if current not in folders:
+                        folders[current] = self.file_tree.insert(
+                            "",
+                            'end',
+                            text=part,
+                            values=(os.path.join(self.data_folder, current),),
+                            tags=('folder',),
+                            open=True
+                        )
+                
+                # Add file under its folder
+                self.file_tree.insert(
+                    folders[rel_path],
+                    'end',
+                    text=file,
+                    values=(full_path,),
+                    tags=('file',)
+                )
+        
+        # Finally add root level files at the bottom
+        for rel_path, file, full_path in all_files:
+            if rel_path == '.':
+                self.file_tree.insert(
+                    "",
+                    'end',
+                    text=file,
+                    values=(full_path,),
+                    tags=('file',)
+                )
+        
+        # Configure tag appearance
         self.file_tree.tag_configure('folder', foreground='lightblue')
         self.file_tree.tag_configure('file', foreground='white')
         
@@ -795,7 +829,22 @@ class OscilloscopeViewer(tk.Tk):
         try:
             self.set_status(f"Loading {os.path.basename(filepath)}...")
             
-            # First read metadata with optimized reading
+            # Clear existing cursors and plot before loading new data
+            self.ax.clear()  # Clear the plot first
+            
+            # Clear existing cursors
+            for name in self.cursors:
+                self.remove_cursor(name)
+            
+            # Reset cursor placement state
+            self.cursor_placement_mode = None
+            self.last_cursor_click = None
+            
+            # Reset cursor enable states
+            self.time_cursor_var.set(False)
+            self.volt_cursor_var.set(False)
+            
+            # Rest of the existing load_data code...
             metadata = {}
             data_start = 0
             
