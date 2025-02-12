@@ -97,12 +97,16 @@ class OscilloscopeViewer(tk.Tk):
         self.main_frame = ttk.Frame(self)
         self.main_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
 
-        # Control panel
+        # Control panel with better organization
         self.control_frame = ttk.LabelFrame(self.main_frame, text="Controls")
         self.control_frame.pack(fill=tk.X, padx=5, pady=5)
 
-        # File selection
-        ttk.Button(self.control_frame, text="Open Data Folder", command=self.load_data_folder).pack(side=tk.LEFT, padx=5)
+        # File controls
+        self.file_controls = ttk.Frame(self.control_frame)
+        self.file_controls.pack(side=tk.LEFT, padx=5)
+        
+        ttk.Button(self.file_controls, text="Open Root Folder", command=self.load_data_folder).pack(side=tk.LEFT, padx=5)
+        ttk.Button(self.file_controls, text="Refresh Files", command=self.refresh_files).pack(side=tk.LEFT, padx=5)
         
         # Channel toggles
         self.ch1_var = tk.BooleanVar(value=True)
@@ -110,37 +114,46 @@ class OscilloscopeViewer(tk.Tk):
         ttk.Checkbutton(self.control_frame, text="CH1", variable=self.ch1_var, command=self.update_plot).pack(side=tk.LEFT, padx=5)
         ttk.Checkbutton(self.control_frame, text="CH2", variable=self.ch2_var, command=self.update_plot).pack(side=tk.LEFT, padx=5)
 
-        # Plot controls
-        self.zoom_frame = ttk.Frame(self.control_frame)
-        self.zoom_frame.pack(side=tk.LEFT, padx=20)
-        ttk.Label(self.zoom_frame, text="Zoom:").pack(side=tk.LEFT)
-        ttk.Button(self.zoom_frame, text="Reset", command=self.reset_zoom).pack(side=tk.LEFT, padx=5)
+        # File browser with tree view for better navigation
+        self.files_frame = ttk.LabelFrame(self.main_frame, text="Data Files")
+        self.files_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        
+        # Create tree view with scrollbars
+        self.tree_frame = ttk.Frame(self.files_frame)
+        self.tree_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        
+        self.tree_scroll_y = ttk.Scrollbar(self.tree_frame)
+        self.tree_scroll_y.pack(side=tk.RIGHT, fill=tk.Y)
+        
+        self.tree_scroll_x = ttk.Scrollbar(self.tree_frame, orient='horizontal')
+        self.tree_scroll_x.pack(side=tk.BOTTOM, fill=tk.X)
+        
+        self.file_tree = ttk.Treeview(self.tree_frame, 
+                                     yscrollcommand=self.tree_scroll_y.set,
+                                     xscrollcommand=self.tree_scroll_x.set,
+                                     selectmode='browse')
+        self.file_tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        
+        self.tree_scroll_y.config(command=self.file_tree.yview)
+        self.tree_scroll_x.config(command=self.file_tree.xview)
+        
+        # Configure tree columns
+        self.file_tree["columns"] = ("path",)
+        self.file_tree.column("#0", width=200)
+        self.file_tree.column("path", width=400)
+        self.file_tree.heading("#0", text="File Name")
+        self.file_tree.heading("path", text="Path")
+        
+        self.file_tree.bind('<<TreeviewSelect>>', self.on_file_select)
 
-        # File list
-        self.files_frame = ttk.LabelFrame(self.main_frame, text="CSV Files")
-        self.files_frame.pack(fill=tk.X, padx=5, pady=5)
-        
-        # Add a scrollbar to the listbox
-        self.list_frame = ttk.Frame(self.files_frame)
-        self.list_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
-        
-        self.scrollbar = ttk.Scrollbar(self.list_frame)
-        self.scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-        
-        self.file_listbox = tk.Listbox(self.list_frame, height=3, yscrollcommand=self.scrollbar.set)
-        self.file_listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        self.scrollbar.config(command=self.file_listbox.yview)
-        
-        self.file_listbox.bind('<<ListboxSelect>>', self.on_file_select)
-
-        # Plot
+        # Plot area
         self.fig = Figure(figsize=(10, 6))
         self.ax = self.fig.add_subplot(111)
         self.canvas = FigureCanvasTkAgg(self.fig, master=self.main_frame)
         self.canvas.draw()
         self.canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
 
-        # Add toolbar
+        # Add navigation toolbar
         from matplotlib.backends.backend_tkagg import NavigationToolbar2Tk
         self.toolbar = NavigationToolbar2Tk(self.canvas, self.main_frame)
         self.toolbar.update()
@@ -151,52 +164,101 @@ class OscilloscopeViewer(tk.Tk):
         self.metadata = {}
 
     def load_data_folder(self):
-        # Start in the script's directory
+        """Open a folder dialog and load all CSV files from the selected directory and its subdirectories."""
         self.data_folder = filedialog.askdirectory(
-            title="Select Data Folder",
+            title="Select Root Data Folder",
             initialdir=self.script_dir
         )
         if self.data_folder:
-            self.file_listbox.delete(0, tk.END)
-            for root, _, files in os.walk(self.data_folder):
-                for file in files:
-                    if file.endswith('.CSV'):
-                        rel_path = os.path.relpath(os.path.join(root, file), self.data_folder)
-                        self.file_listbox.insert(tk.END, rel_path)
+            self.refresh_files()
+    
+    def refresh_files(self):
+        """Refresh the file tree with all CSV files in the data folder."""
+        if not self.data_folder:
+            return
+            
+        # Clear existing items
+        for item in self.file_tree.get_children():
+            self.file_tree.delete(item)
+            
+        # Cache for parent nodes
+        parent_nodes = {"": ""}
+        
+        # Walk through directory and add files to tree
+        for root, dirs, files in os.walk(self.data_folder):
+            # Sort directories and files for consistent display
+            dirs.sort()
+            files.sort()
+            
+            # Get relative path from data folder
+            rel_path = os.path.relpath(root, self.data_folder)
+            if rel_path == ".":
+                parent = ""
+            else:
+                # Create parent folders in tree
+                parts = rel_path.split(os.sep)
+                current_path = ""
+                for part in parts:
+                    next_path = os.path.join(current_path, part) if current_path else part
+                    if next_path not in parent_nodes:
+                        parent_nodes[next_path] = self.file_tree.insert(
+                            parent_nodes[current_path], 
+                            'end',
+                            text=part,
+                            values=(next_path,),
+                            open=True
+                        )
+                    current_path = next_path
+                parent = parent_nodes[rel_path]
+            
+            # Add CSV files to tree
+            for file in files:
+                if file.upper().endswith('.CSV'):
+                    file_rel_path = os.path.join(rel_path, file) if rel_path != "." else file
+                    self.file_tree.insert(
+                        parent, 
+                        'end',
+                        text=file,
+                        values=(file_rel_path,),
+                        tags=('csv_file',)
+                    )
 
     def on_file_select(self, event):
-        selection = self.file_listbox.curselection()
+        selection = self.file_tree.selection()
         if selection:
-            filename = self.file_listbox.get(selection[0])
-            self.load_data(os.path.join(self.data_folder, filename))
+            item = selection[0]
+            if 'csv_file' in self.file_tree.item(item)['tags']:
+                file_path = self.file_tree.item(item)['values'][0]
+                full_path = os.path.join(self.data_folder, file_path)
+                self.load_data(full_path)
 
     def load_data(self, filepath):
         try:
-            # First read metadata
+            # First read metadata with optimized reading
             metadata = {}
-            data_lines = []
+            header_lines = []
+            data_start = 0
             
             with open(filepath, 'r') as f:
-                lines = f.readlines()
-                
-            # Process metadata (first 13 lines)
-            for line in lines[:13]:
-                if ',' in line:
-                    key, value = line.strip().split(',', 1)
-                    metadata[key] = value
-
-            # Find the header line (TIME,CH1,CH2)
-            header_index = next(i for i, line in enumerate(lines) if 'TIME' in line)
+                for i, line in enumerate(f):
+                    if i < 13:  # Metadata section
+                        if ',' in line:
+                            key, value = line.strip().split(',', 1)
+                            metadata[key] = value
+                        header_lines.append(line)
+                    else:
+                        if 'TIME' in line:
+                            data_start = i
+                            break
             
-            # Convert remaining lines to DataFrame
-            data = pd.read_csv(filepath, skiprows=header_index)
-            
-            self.current_data = data
+            # Now read just the data portion efficiently
+            self.current_data = pd.read_csv(filepath, skiprows=data_start)
             self.metadata = metadata
-            self.update_plot()
             
             # Update window title with metadata
-            self.title(f"Oscilloscope Data Viewer - {os.path.basename(filepath)} - {metadata.get('Model', 'Unknown')}")
+            self.title(f"Oscilloscope Data - {os.path.basename(filepath)} - {metadata.get('Model', 'Unknown')}")
+            
+            self.update_plot()
             
         except Exception as e:
             tk.messagebox.showerror("Error", f"Failed to load file: {str(e)}")
@@ -207,29 +269,36 @@ class OscilloscopeViewer(tk.Tk):
 
         self.ax.clear()
         
+        # Plot visible channels
         if self.ch1_var.get():
             self.ax.plot(self.current_data['TIME'], self.current_data['CH1'], 
-                        label='CH1', color='yellow', linewidth=1)
+                        label=f'CH1 ({self.metadata.get("Vertical Scale", "?")}V/div)', 
+                        color='yellow', linewidth=1)
         if self.ch2_var.get():
             self.ax.plot(self.current_data['TIME'], self.current_data['CH2'], 
-                        label='CH2', color='cyan', linewidth=1)
+                        label=f'CH2 ({self.metadata.get("Vertical Scale", "?")}V/div)', 
+                        color='cyan', linewidth=1)
 
         # Set dark theme for better visibility
         self.fig.set_facecolor('#2b2b2b')
         self.ax.set_facecolor('#2b2b2b')
-        self.ax.grid(True, color='#404040')
+        self.ax.grid(True, color='#404040', linestyle='--', alpha=0.5)
         self.ax.tick_params(colors='white')
+        
         for spine in self.ax.spines.values():
             spine.set_color('white')
 
-        self.ax.set_xlabel('Time (s)', color='white')
-        self.ax.set_ylabel('Voltage (V)', color='white')
+        # Add labels with units from metadata
+        self.ax.set_xlabel(f'Time ({self.metadata.get("Horizontal Units", "s")})', color='white')
+        self.ax.set_ylabel(f'Voltage ({self.metadata.get("Vertical Units", "V")})', color='white')
+        
+        # Add legend with metadata info
         self.ax.legend(facecolor='#2b2b2b', labelcolor='white')
         
-        # Show scale information from metadata
+        # Show time scale from metadata
         if self.metadata:
             title = f"Time Scale: {self.metadata.get('Horizontal Scale', 'Unknown')}s/div"
-            self.ax.set_title(title, color='white')
+            self.ax.set_title(title, color='white', pad=10)
             
         self.canvas.draw()
 
