@@ -24,7 +24,7 @@ This project is an oscilloscope data viewer that allows users to load and visual
 
 3. Create a conda environment:
    ```
-   conda create --name eset355-lab-viewer python=3.9
+   conda create --name eset355-lab-viewer python=3.11.11
    conda activate eset355-lab-viewer
    ```
 
