@@ -1,5 +1,6 @@
 # TODO
 
+- [ ] Refactor the code for better modularity and maintainability.
 - [ ] Fix the CSV selector/viewer not being able to be seen unless fullscreen.
 - [ ] Implement actual cursor measurements.
 - [ ] Improve cursors usage
