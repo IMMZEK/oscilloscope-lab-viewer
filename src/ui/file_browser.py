@@ -195,4 +195,19 @@ class FileBrowser(ttk.Frame):
             if self.file_tree.item(item, 'open'):
                 self.file_tree.item(item, open=False)
             else:
-                self.file_tree.item(item, open=True) 
+                self.file_tree.item(item, open=True)
+
+    def setup_file_tree(self):
+        """Setup the file tree widget."""
+        self.file_tree = ttk.Treeview(self, selectmode='browse', show='tree')
+        self.file_tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        
+        # Configure tags
+        theme = self.master.master.master.theme_manager.get_current_theme()
+        if theme:
+            self.file_tree.tag_configure('file', foreground=theme['ui']['fg'])
+        
+        # Add scrollbar
+        scrollbar = ttk.Scrollbar(self, orient=tk.VERTICAL, command=self.file_tree.yview)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        self.file_tree.configure(yscrollcommand=scrollbar.set) 

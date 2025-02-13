@@ -4,6 +4,7 @@ from tkinter import ttk, messagebox
 from src.core.data_handler import DataHandler
 from src.ui.file_browser import FileBrowser
 from src.ui.plot_manager import PlotManager
+from src.themes.theme_manager import ThemeManager
 
 class OscilloscopeViewer(tk.Tk):
     def __init__(self):
@@ -12,11 +13,11 @@ class OscilloscopeViewer(tk.Tk):
         # Initialize variables
         self.script_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
         self.data_handler = DataHandler()
+        self.theme_manager = ThemeManager()
         
         # Configure the window
         self.title("Oscilloscope Data Viewer")
         self.geometry("1400x900")
-        self.configure(bg='#2b2b2b')
         
         # Set theme and style
         self.setup_theme()
@@ -33,28 +34,227 @@ class OscilloscopeViewer(tk.Tk):
 
     def setup_theme(self):
         """Configure the application theme and styles."""
+        # Set initial theme
+        self.theme_manager.set_current_theme("White")
+        self.apply_current_theme()
+
+    def apply_current_theme(self):
+        """Apply the current theme to all widgets with comprehensive color settings."""
+        theme = self.theme_manager.get_current_theme()
+        if not theme:
+            return
+    
+        ui_theme = theme["ui"]
         style = ttk.Style()
-        style.configure('Treeview', 
-                       background='#2b2b2b',
-                       foreground='white',
-                       fieldbackground='#2b2b2b',
-                       selectbackground='#404040',
-                       selectforeground='white')
-        style.configure('Treeview.Heading', 
-                       background='#3b3b3b',
-                       foreground='white')
-        style.configure('TLabelframe', 
-                       background='#2b2b2b',
-                       foreground='white')
-        style.configure('TLabelframe.Label', 
-                       background='#2b2b2b',
-                       foreground='white')
+    
+        # Set default style options
+        style.configure('.',
+                        background=ui_theme['bg'],
+                        foreground=ui_theme['fg'],
+                        fieldbackground=ui_theme['bg'],
+                        selectbackground=ui_theme['select_bg'],
+                        selectforeground=ui_theme['fg'])
+        
+        # Configure Treeview including heading and alternate row colors
+        style.configure('Treeview',
+                        background=ui_theme['bg'],
+                        foreground=ui_theme['fg'],
+                        fieldbackground=ui_theme['bg'],
+                        selectbackground=ui_theme['select_bg'],
+                        selectforeground=ui_theme['fg'])
+        style.map('Treeview',
+                  background=[('selected', ui_theme['select_bg']),
+                              ('!selected', ui_theme['bg']),
+                              ('disabled', ui_theme.get('disabled_bg', ui_theme['bg']))],
+                  foreground=[('selected', ui_theme['fg']),
+                              ('!selected', ui_theme['fg']),
+                              ('disabled', ui_theme.get('disabled_fg', ui_theme['fg']))])
+        # Configure Treeview heading (header) styling
+        style.configure('Treeview.Heading',
+                        background=ui_theme.get('header_bg', ui_theme['frame_bg']),
+                        foreground=ui_theme.get('header_fg', ui_theme['fg']),
+                        relief='raised')
+        # Configure alternate row colors for Treeview
+        style.configure('Treeview.EvenRow',
+                        background=ui_theme.get('even_row_bg', ui_theme['bg']))
+        style.configure('Treeview.OddRow',
+                        background=ui_theme.get('odd_row_bg', ui_theme['bg']))
+    
+        # Configure frames and labelframes
+        style.configure('TFrame', background=ui_theme['bg'])
+        style.configure('TLabelframe',
+                        background=ui_theme['bg'],
+                        foreground=ui_theme['fg'])
+        style.map('TLabelframe',
+                  background=[('disabled', ui_theme.get('disabled_bg', ui_theme['bg']))],
+                  foreground=[('disabled', ui_theme.get('disabled_fg', ui_theme['fg']))])
+        style.configure('TLabelframe.Label',
+                        background=ui_theme['bg'],
+                        foreground=ui_theme['fg'])
+        style.map('TLabelframe.Label',
+                  background=[('disabled', ui_theme.get('disabled_bg', ui_theme['bg']))],
+                  foreground=[('disabled', ui_theme.get('disabled_fg', ui_theme['fg']))])
+    
+        # Configure labels
+        style.configure('TLabel',
+                        background=ui_theme['bg'],
+                        foreground=ui_theme['fg'])
+        style.map('TLabel',
+                  background=[('disabled', ui_theme.get('disabled_bg', ui_theme['bg']))],
+                  foreground=[('disabled', ui_theme.get('disabled_fg', ui_theme['fg']))])
+    
+        # Configure buttons with additional states
+        style.configure('TButton',
+                        background=ui_theme['frame_bg'],
+                        foreground=ui_theme['fg'])
+        style.map('TButton',
+                  background=[('active', ui_theme.get('hover_bg', ui_theme['select_bg'])),
+                              ('pressed', ui_theme.get('pressed_bg', ui_theme['select_bg'])),
+                              ('disabled', ui_theme.get('disabled_bg', ui_theme['frame_bg']))],
+                  foreground=[('active', ui_theme['fg']),
+                              ('pressed', ui_theme['fg']),
+                              ('disabled', ui_theme.get('disabled_fg', ui_theme['fg']))])
+    
+        # Configure comboboxes with additional states
+        style.configure('TCombobox',
+                        background=ui_theme['frame_bg'],
+                        foreground=ui_theme['fg'],
+                        fieldbackground=ui_theme['bg'],
+                        selectbackground=ui_theme['select_bg'],
+                        selectforeground=ui_theme['fg'],
+                        arrowcolor=ui_theme['fg'])
+        style.map('TCombobox',
+                  background=[('readonly', ui_theme['frame_bg']),
+                              ('disabled', ui_theme.get('disabled_bg', ui_theme['frame_bg']))],
+                  fieldbackground=[('readonly', ui_theme['bg']),
+                                   ('disabled', ui_theme.get('disabled_bg', ui_theme['bg']))],
+                  selectbackground=[('readonly', ui_theme['select_bg'])],
+                  selectforeground=[('readonly', ui_theme['fg'])])
+    
+        # Configure checkbuttons with additional states
+        style.configure('TCheckbutton',
+                        background=ui_theme['bg'],
+                        foreground=ui_theme['fg'],
+                        indicatorcolor=ui_theme['fg'],
+                        indicatorbackground=ui_theme['bg'])
+        style.map('TCheckbutton',
+                  background=[('active', ui_theme['bg']),
+                              ('disabled', ui_theme.get('disabled_bg', ui_theme['bg']))],
+                  foreground=[('active', ui_theme['fg']),
+                              ('disabled', ui_theme.get('disabled_fg', ui_theme['fg']))])
+    
+        # Configure entry widgets (if used)
+        style.configure('TEntry',
+                        fieldbackground=ui_theme['bg'],
+                        foreground=ui_theme['fg'],
+                        bordercolor=ui_theme.get('border_color', ui_theme['fg']),
+                        lightcolor=ui_theme.get('light_color', ui_theme['select_bg']),
+                        insertcolor=ui_theme.get('cursor_color', ui_theme['fg']))
+        style.map('TEntry',
+                  fieldbackground=[('disabled', ui_theme.get('disabled_bg', ui_theme['bg']))],
+                  foreground=[('disabled', ui_theme.get('disabled_fg', ui_theme['fg']))],
+                  focus=[('focus', ui_theme.get('focus_bg', ui_theme['select_bg']))])
+    
+        # Configure separators
+        style.configure('TSeparator',
+                        background=ui_theme['fg'])
+    
+        # Configure status bar
+        style.configure('Status.TLabel',
+                        background=ui_theme['frame_bg'],
+                        foreground=ui_theme['fg'],
+                        relief='sunken')
+    
+        # Update window background
+        self.configure(bg=ui_theme['bg'])
+    
+        # Update status bar widget if available
+        if hasattr(self, 'status_bar'):
+            self.status_bar.configure(style='Status.TLabel')
+    
+        # Recursively update all child widgets
+        self._update_widget_colors(self, ui_theme)
+    
+        # Update plot colors if a plot manager exists
+        if hasattr(self, 'plot_manager'):
+            self.plot_manager.apply_theme(theme['plot'])
+    
+        # Force redraw of all widgets
+        self.update_idletasks()
+
+    def _update_widget_colors(self, widget, theme):
+        """Recursively update colors of all widgets."""
+        try:
+            # Update ttk widget style
+            if isinstance(widget, ttk.Widget):
+                if isinstance(widget, ttk.Button):
+                    widget.configure(style='TButton')
+                elif isinstance(widget, ttk.Combobox):
+                    widget.configure(style='TCombobox')
+                elif isinstance(widget, ttk.Separator):
+                    widget.configure(style='Toolbar.TSeparator')
+                else:
+                    widget.configure(style=widget.winfo_class())
+            # Update tk widget colors
+            elif isinstance(widget, (tk.Label, tk.Frame, tk.LabelFrame)):
+                widget.configure(
+                    background=theme['bg'],
+                    foreground=theme['fg']
+                )
+            elif isinstance(widget, tk.Entry):
+                widget.configure(
+                    background=theme['bg'],
+                    foreground=theme['fg'],
+                    insertbackground=theme['fg'],
+                    selectbackground=theme['select_bg'],
+                    selectforeground=theme['fg']
+                )
+            elif isinstance(widget, (tk.Listbox, tk.Text)):
+                widget.configure(
+                    background=theme['bg'],
+                    foreground=theme['fg'],
+                    selectbackground=theme['select_bg'],
+                    selectforeground=theme['fg']
+                )
+            elif isinstance(widget, tk.Button):
+                widget.configure(
+                    background=theme['frame_bg'],
+                    foreground=theme['fg'],
+                    activebackground=theme['select_bg'],
+                    activeforeground=theme['fg'],
+                    highlightbackground=theme['bg'],
+                    highlightcolor=theme['fg']
+                )
+        except tk.TclError:
+            # Some widgets might not support all configurations
+            pass
+        
+        # Recursively update all children
+        for child in widget.winfo_children():
+            self._update_widget_colors(child, theme)
 
     def create_layout(self):
         """Create the main application layout."""
         # Create main container
         self.main_frame = ttk.Frame(self)
         self.main_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        
+        # Create theme selector
+        theme_frame = ttk.Frame(self.main_frame)
+        theme_frame.pack(side=tk.TOP, anchor=tk.NE, padx=5, pady=5)
+        
+        ttk.Label(theme_frame, text="Theme:").pack(side=tk.LEFT, padx=5)
+        
+        self.theme_var = tk.StringVar(value=self.theme_manager.current_theme)
+        theme_combo = ttk.Combobox(
+            theme_frame,
+            textvariable=self.theme_var,
+            values=self.theme_manager.get_theme_names(),
+            state='readonly',
+            style='Theme.TCombobox'
+        )
+        theme_combo.pack(side=tk.LEFT, padx=5)
+        theme_combo.bind('<<ComboboxSelected>>', lambda e: self.change_theme())
         
         # Create central layout
         self.content_frame = ttk.Frame(self.main_frame)
@@ -65,9 +265,7 @@ class OscilloscopeViewer(tk.Tk):
             self.main_frame,
             text="Ready",
             relief=tk.SUNKEN,
-            anchor=tk.W,
-            background='#2b2b2b',
-            foreground='white'
+            anchor=tk.W
         )
         self.status_bar.pack(side=tk.BOTTOM, fill=tk.X)
         
@@ -97,8 +295,13 @@ class OscilloscopeViewer(tk.Tk):
         self.right_panel.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=5, pady=5)
         
         # Add plot manager
-        self.plot_manager = PlotManager(self.right_panel)
+        self.plot_manager = PlotManager(self.right_panel, self)
         self.plot_manager.pack(fill=tk.BOTH, expand=True)
+        
+        # Apply current theme to plot manager
+        theme = self.theme_manager.get_current_theme()
+        if theme:
+            self.plot_manager.apply_theme(theme['plot'])
 
     def setup_measurements_panel(self):
         """Setup the measurements panel."""
@@ -230,4 +433,19 @@ class OscilloscopeViewer(tk.Tk):
     def set_status(self, message):
         """Update status bar message."""
         self.status_bar.config(text=message)
-        self.update_idletasks() 
+        self.update_idletasks()
+
+    def change_theme(self):
+        """Change the current theme."""
+        self.theme_manager.set_current_theme(self.theme_var.get())
+        self.apply_current_theme()
+        
+        # Refresh file browser and measurements panel
+        if hasattr(self, 'file_browser'):
+            self.file_browser.refresh_files()
+        if hasattr(self, 'plot_manager'):
+            self.plot_manager.update_plot()
+            
+        # Update measurements if they exist
+        if hasattr(self, 'update_measurements'):
+            self.update_measurements() 

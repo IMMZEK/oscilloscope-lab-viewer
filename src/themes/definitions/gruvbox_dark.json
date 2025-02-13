@@ -1,0 +1,27 @@
+{
+  "name": "Gruvbox Dark",
+  "ui": {
+    "bg": "#282828",
+    "fg": "#ebdbb2",
+    "select_bg": "#504945",
+    "frame_bg": "#3c3836",
+    "accent": "#b8bb26"
+  },
+  "plot": {
+    "bg": "#282828",
+    "fg": "#ebdbb2",
+    "grid": "#504945",
+    "text": "#ebdbb2",
+    "accent": "#b8bb26",
+    "channel_colors": [
+      "#b8bb26",
+      "#83a598",
+      "#d3869b",
+      "#fe8019",
+      "#fb4934",
+      "#fabd2f",
+      "#8ec07c",
+      "#ebdbb2"
+    ]
+  }
+}
