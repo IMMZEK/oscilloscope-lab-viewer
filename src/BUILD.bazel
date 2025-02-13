@@ -1,0 +1,12 @@
+load("@rules_python//python:defs.bzl", "py_binary")
+
+py_binary(
+    name = "viewer",
+    srcs = ["main.py"],
+    deps = [
+        "//src/core",
+        "//src/ui",
+    ],
+    main = "main.py",
+    data = ["//Lab3/Data:lab3_data"],
+)

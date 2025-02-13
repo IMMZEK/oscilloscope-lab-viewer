@@ -1,11 +1,14 @@
 load("@rules_python//python:defs.bzl", "py_library")
-load("@pip//:requirements.bzl", "requirement")
 
 py_library(
     name = "core",
-    srcs = glob(["*.py"]),
+    srcs = [
+        "__init__.py",
+        "data_handler.py",
+    ],
     deps = [
-        "//:requirements",
+        "@pip//numpy",
+        "@pip//pandas",
     ],
     visibility = ["//visibility:public"],
 )

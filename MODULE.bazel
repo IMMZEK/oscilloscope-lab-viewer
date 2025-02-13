@@ -1,39 +1,30 @@
 module(
     name = "eset355_lab_viewer",
-    version = "1.0",
+    version = "0.0.1",
     compatibility_level = 1,
 )
 
 bazel_dep(name = "bazel_skylib", version = "1.7.1")
-bazel_dep(name = "platforms", version = "0.0.4")
-bazel_dep(name = "rules_python", version = "0.27.1")
+bazel_dep(name = "platforms", version = "0.0.10")
+bazel_dep(name = "rules_python", version = "0.40.0")
 
-# Initialize Python toolchain with explicit version support
 python = use_extension("@rules_python//python/extensions:python.bzl", "python")
 python.toolchain(
     configure_coverage_tool = True,
     is_default = True,
-    python_version = "3.11",
+    python_version = "3.9",
+    python_implementation = "cpython",
+    configure_stub_tool_path = True,
+    enable_py_cc_deps = True,
 )
 
-# Override available Python versions and specify exact version mapping
-python.override(
-    minor_mapping = {
-        "3.11": "3.11.7",  # Specify exact version for stability
-    },
-)
-
-# Configure pip dependencies with enhanced settings
 pip = use_extension("@rules_python//python/extensions:pip.bzl", "pip")
+
 pip.parse(
-    name = "pip",
-    experimental_target_platforms = [
-        "host",  # Use host platform for compatibility
-    ],
+    hub_name = "pip",
+    python_version = "3.9",
     requirements_lock = "//:requirements_lock.txt",
-    # Enable pip index URL override through environment if needed
-    envsubst = ["PIP_INDEX_URL"],
-    experimental_index_url = "${PIP_INDEX_URL:-https://pypi.org/simple}",
 )
 
+use_repo(python, "python_3_9", "pythons_hub")
 use_repo(pip, "pip")

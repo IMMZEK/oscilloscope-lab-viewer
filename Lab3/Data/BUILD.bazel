@@ -1,0 +1,9 @@
+filegroup(
+    name = "lab3_data",
+    srcs = glob([
+        "B/*.CSV",
+        "C/*.CSV",
+        "D/*.CSV",
+    ], allow_empty = True),
+    visibility = ["//visibility:public"],
+)

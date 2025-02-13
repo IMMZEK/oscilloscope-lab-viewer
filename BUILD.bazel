@@ -1,30 +1,13 @@
-load("@rules_python//python:defs.bzl", "py_binary", "py_library")
-load("@pip//:requirements.bzl", "requirement")
+load("@rules_python//python:pip.bzl", "compile_pip_requirements")
 
-py_binary(
-    name = "oscilloscope_viewer",
-    srcs = ["src/main.py"],
-    main = "src/main.py",
-    deps = [
-        "//src/core:core",
-        "//src/ui:ui",
-    ],
-    python_version = "PY3",
-    visibility = ["//visibility:public"],
-)
-
-py_library(
+compile_pip_requirements(
     name = "requirements",
-    deps = [
-        requirement("matplotlib"),
-        requirement("numpy"),
-        requirement("pandas"),
-    ],
-    visibility = ["//visibility:public"],
+    requirements_in = "requirements.txt",
+    requirements_txt = "requirements_lock.txt",
 )
 
 filegroup(
-    name = "data_files",
-    srcs = glob(["Lab3/Data/**/*.CSV"]),
+    name = "all_csv_data",
+    srcs = ["//Lab3/Data:lab3_data"],
     visibility = ["//visibility:public"],
 )

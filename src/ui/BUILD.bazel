@@ -1,12 +1,18 @@
 load("@rules_python//python:defs.bzl", "py_library")
-load("@pip//:requirements.bzl", "requirement")
 
 py_library(
     name = "ui",
-    srcs = glob(["*.py"]),
+    srcs = [
+        "__init__.py",
+        "cursor_manager.py",
+        "file_browser.py",
+        "oscilloscope_viewer.py",
+        "plot_manager.py",
+    ],
     deps = [
-        "//:requirements",
         "//src/core",
+        "@pip//matplotlib",
+        "@pip//numpy",
     ],
     visibility = ["//visibility:public"],
 )
