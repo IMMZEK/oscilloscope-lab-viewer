@@ -1,0 +1,19 @@
+common --enable_bzlmod
+
+# Build Python with dynamic linking
+build --dynamic_mode=off
+
+# Use Python toolchain
+build --incompatible_use_python_toolchains
+
+# Use C++17 by default
+build --cxxopt='-std=c++17'
+
+# Output test errors to console
+test --test_output=errors
+
+# macOS-specific settings
+build:macos --cxxopt='-mmacosx-version-min=10.14'
+build:macos --linkopt='-mmacosx-version-min=10.14'
+
+try-import %workspace%/.bazelrc.user

@@ -230,4 +230,4 @@ class OscilloscopeViewer(tk.Tk):
     def set_status(self, message):
         """Update status bar message."""
         self.status_bar.config(text=message)
-        self.update_idletasks() 
+        self.update_idletasks()
