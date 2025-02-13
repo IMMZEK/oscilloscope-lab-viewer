@@ -1,0 +1,27 @@
+{
+  "name": "Gruvbox Light",
+  "ui": {
+    "bg": "#fbf1c7",
+    "fg": "#3c3836",
+    "select_bg": "#d5c4a1",
+    "frame_bg": "#ebdbb2",
+    "accent": "#79740e"
+  },
+  "plot": {
+    "bg": "#fbf1c7",
+    "fg": "#3c3836",
+    "grid": "#d5c4a1",
+    "text": "#3c3836",
+    "accent": "#79740e",
+    "channel_colors": [
+      "#79740e",
+      "#076678",
+      "#8f3f71",
+      "#af3a03",
+      "#9d0006",
+      "#b57614",
+      "#427b58",
+      "#3c3836"
+    ]
+  }
+}

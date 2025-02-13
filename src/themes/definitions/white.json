@@ -1,0 +1,27 @@
+{
+  "name": "White",
+  "ui": {
+    "bg": "#FFFFFF",
+    "fg": "#FFFFFF",
+    "select_bg": "#FFFFFF",
+    "frame_bg": "#FFFFFF",
+    "accent": "#FFFFFF"
+  },
+  "plot": {
+    "bg": "#FFFFFF",
+    "fg": "#FFFFFF",
+    "grid": "#FFFFFF",
+    "text": "#FFFFFF",
+    "accent": "#FFFFFF",
+    "channel_colors": [
+      "#FFFFFF",
+      "#FFFFFF",
+      "#FFFFFF",
+      "#FFFFFF",
+      "#FFFFFF",
+      "#FFFFFF",
+      "#FFFFFF",
+      "#FFFFFF"
+    ]
+  }
+}

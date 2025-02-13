@@ -1,77 +1,81 @@
 class CursorManager:
-    def __init__(self, ax):
+    def __init__(self, ax, viewer, theme_manager):
         self.ax = ax
         self.cursors = {
-            'time1': {'line': None, 'value': None, 'active': False, 'label': None},
-            'time2': {'line': None, 'value': None, 'active': False, 'label': None},
-            'volt1': {'line': None, 'value': None, 'active': False, 'label': None},
-            'volt2': {'line': None, 'value': None, 'active': False, 'label': None}
+            'time1': {'line': None, 'label': None, 'value': None, 'active': False},
+            'time2': {'line': None, 'label': None, 'value': None, 'active': False},
+            'volt1': {'line': None, 'label': None, 'value': None, 'active': False},
+            'volt2': {'line': None, 'label': None, 'value': None, 'active': False}
         }
+        self.dragging = False
+        self.active_cursor = None
         self.cursor_placement_mode = None
         self.last_cursor_click = None
-        self.active_cursor = None
-        self.dragging = False
-        # Get reference to the viewer instance
-        self.viewer = self.ax.figure.canvas.get_tk_widget().master.master.master
+        self.current_theme = None
+        self.viewer = viewer
+        self.theme_manager = theme_manager
 
-    def add_cursor(self, name, position=0, vertical=True, color=None):
+    def set_theme(self, theme):
+        """Set the current theme."""
+        self.current_theme = theme
+        self.update_cursor_positions()
+
+    def _get_fallback_theme(self):
+        return self.theme_manager.get_theme("White")['plot']
+
+    def add_cursor(self, name, value, vertical=True, color=None):
         """Add a cursor line to the plot."""
-        self.remove_cursor(name)
+        # Remove existing cursor if it exists
+        if self.cursors[name]['line'] is not None:
+            self.cursors[name]['line'].remove()
+            if self.cursors[name]['label'] is not None:
+                self.cursors[name]['label'].remove()
+        
+        # Use the helper to get fallback theme
+        fallback_theme = self._get_fallback_theme()
         
         if vertical:
             line = self.ax.axvline(
-                x=position,
-                color=color or 'red',
+                value,
+                color=color or self.current_theme.get('accent', fallback_theme['accent']),
                 linestyle='--',
                 alpha=0.8,
-                linewidth=2,
-                picker=5,
-                zorder=100  # Ensure cursors are always on top
+                picker=True,
+                label=name
+            )
+            label = self.ax.text(
+                value, 0.02,
+                f'{name}',
+                rotation=90,
+                verticalalignment='bottom',
+                color=color or self.current_theme.get('accent', fallback_theme['accent']),
+                backgroundcolor=self.current_theme.get('bg', fallback_theme['bg']),
+                alpha=0.8
             )
         else:
             line = self.ax.axhline(
-                y=position,
-                color=color or 'cyan',
+                value,
+                color=color or self.current_theme.get('accent', fallback_theme['accent']),
                 linestyle='--',
                 alpha=0.8,
-                linewidth=2,
-                picker=5,
-                zorder=100  # Ensure cursors are always on top
+                picker=True,
+                label=name
             )
-            
-        self.cursors[name] = {
-            'line': line,
-            'value': position,
-            'active': False,
-            'label': None
-        }
+            label = self.ax.text(
+                0.02, value,
+                f'{name}',
+                verticalalignment='bottom',
+                color=color or self.current_theme.get('accent', fallback_theme['accent']),
+                backgroundcolor=self.current_theme.get('bg', fallback_theme['bg']),
+                alpha=0.8
+            )
         
-        # Add cursor label
-        if vertical:
-            self.cursors[name]['label'] = self.ax.text(
-                position,
-                self.ax.get_ylim()[1],
-                f'{name}: {position:.2e}s',
-                rotation=90,
-                color=color or 'red',
-                va='top',
-                ha='right',
-                backgroundcolor='#2b2b2b',
-                alpha=0.8,
-                zorder=100  # Ensure labels are always on top
-            )
-        else:
-            self.cursors[name]['label'] = self.ax.text(
-                self.ax.get_xlim()[0],
-                position,
-                f'{name}: {position:.3f}V',
-                color=color or 'cyan',
-                va='bottom',
-                ha='left',
-                backgroundcolor='#2b2b2b',
-                alpha=0.8,
-                zorder=100  # Ensure labels are always on top
-            )
+        self.cursors[name].update({
+            'line': line,
+            'label': label,
+            'value': value,
+            'active': True
+        })
         
         # Force a redraw
         self.ax.figure.canvas.draw()
@@ -129,6 +133,9 @@ class CursorManager:
 
     def update_cursor_positions(self):
         """Update cursor positions and labels."""
+        # Use the helper to get fallback theme
+        fallback_theme = self._get_fallback_theme()
+        
         for name, cursor in self.cursors.items():
             if cursor['line'] is not None:
                 try:
@@ -148,7 +155,7 @@ class CursorManager:
                         color=cursor['line'].get_color(),
                         va='top',
                         ha='right',
-                        backgroundcolor='#2b2b2b',
+                        backgroundcolor=self.current_theme.get('bg', fallback_theme['bg']),
                         alpha=0.8
                     )
                 else:
@@ -159,7 +166,7 @@ class CursorManager:
                         color=cursor['line'].get_color(),
                         va='bottom',
                         ha='left',
-                        backgroundcolor='#2b2b2b',
+                        backgroundcolor=self.current_theme.get('bg', fallback_theme['bg']),
                         alpha=0.8
                     )
         
