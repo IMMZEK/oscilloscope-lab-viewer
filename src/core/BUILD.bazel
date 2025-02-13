@@ -11,4 +11,5 @@ py_library(
         "@pip//pandas",
     ],
     visibility = ["//visibility:public"],
+    imports = ["."],
 )

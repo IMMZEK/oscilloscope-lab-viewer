@@ -1,6 +1,6 @@
-# ESET355 Lab Viewer
+# ESET 355 Lab Viewer
 
-This project is an oscilloscope data viewer that allows users to load and visualize oscilloscope data from CSV files. The application provides interactive measurement options and a user-friendly interface.
+A Python-based oscilloscope viewer for ESET 355 lab data.
 
 ## Features
 
@@ -32,6 +32,89 @@ This project is an oscilloscope data viewer that allows users to load and visual
    ```
    pip install -r requirements.txt
    ```
+
+## Building and Running
+
+You can build and run the application using any of these methods:
+
+### 1. Combined Build and Run (Recommended)
+
+This method ensures proper Bazel dependency management with system Python execution:
+
+```bash
+# Make the script executable (first time only)
+chmod +x build_and_run.sh
+
+# Build and run the application
+./build_and_run.sh
+```
+
+### 2. Using Bazel
+
+1. Build and run the project:
+   ```bash
+   # Clean build (recommended for first run)
+   bazel clean
+
+   # Build the project
+   bazel build //src:viewer
+
+   # Run with Bazel
+   bazel run //src:viewer
+   ```
+
+2. For development, you can update dependencies:
+   ```bash
+   # Update dependencies
+   bazel run //:requirements.update
+
+   # Clean and rebuild
+   bazel clean && bazel build //src:viewer
+   ```
+
+### 3. Using Python Directly
+
+The recommended way to run the application is using the provided run script:
+
+```bash
+# Make the script executable (first time only)
+chmod +x run.sh
+
+# Run the application
+./run.sh
+```
+
+The run script ensures proper integration with system dependencies while using Bazel-managed Python packages.
+
+## Development
+
+When adding new Python dependencies:
+
+1. Add them to `requirements.txt`
+2. Update the Bazel dependencies:
+   ```bash
+   bazel run //:requirements.update
+   ```
+3. Rebuild the project:
+   ```bash
+   bazel build //src:viewer
+   ```
+
+## Project Structure
+
+- `src/`: Main application source code
+  - `core/`: Core data handling functionality
+  - `ui/`: User interface components
+- `Lab3/`: Lab data files
+  - `Data/`: CSV data files
+
+## Dependencies
+
+- Python 3.9+
+- matplotlib
+- numpy
+- pandas
+- tkinter (system Python)
 
 ## Usage
 

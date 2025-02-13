@@ -1,12 +1,20 @@
-load("@rules_python//python:defs.bzl", "py_binary")
+load("@rules_python//python:defs.bzl", "py_binary", "py_library")
+
+py_library(
+    name = "eset355_lib",
+    srcs = glob(["*.py"]),
+    visibility = ["//visibility:public"],
+    imports = ["."],
+)
 
 py_binary(
     name = "viewer",
-    srcs = ["main.py"],
+    srcs = ["run_viewer.py"],
+    main = "run_viewer.py",
     deps = [
+        ":eset355_lib",
         "//src/core",
         "//src/ui",
     ],
-    main = "main.py",
     data = ["//Lab3/Data:lab3_data"],
 )

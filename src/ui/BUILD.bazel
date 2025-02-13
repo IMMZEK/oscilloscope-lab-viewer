@@ -14,5 +14,6 @@ py_library(
         "@pip//matplotlib",
         "@pip//numpy",
     ],
+    imports = ["."],
     visibility = ["//visibility:public"],
 )

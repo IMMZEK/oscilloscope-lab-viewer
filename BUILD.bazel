@@ -1,13 +1,16 @@
-load("@rules_python//python:pip.bzl", "compile_pip_requirements")
-
-compile_pip_requirements(
-    name = "requirements",
-    requirements_in = "requirements.txt",
-    requirements_txt = "requirements_lock.txt",
-)
+load("@rules_python//python:defs.bzl", "py_binary")
 
 filegroup(
-    name = "all_csv_data",
-    srcs = ["//Lab3/Data:lab3_data"],
+    name = "all",
+    srcs = ["//src:viewer"],
     visibility = ["//visibility:public"],
+)
+
+py_binary(
+    name = "viewer",
+    srcs = ["@rules_python//python:current_py_toolchain"],
+    main = "//src:run_viewer.py",
+    deps = ["//src:viewer_lib"],
+    data = ["//Lab3/Data:lab3_data"],
+    imports = ["src"],
 )

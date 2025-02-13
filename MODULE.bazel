@@ -13,9 +13,6 @@ python.toolchain(
     configure_coverage_tool = True,
     is_default = True,
     python_version = "3.9",
-    python_implementation = "cpython",
-    configure_stub_tool_path = True,
-    enable_py_cc_deps = True,
 )
 
 pip = use_extension("@rules_python//python/extensions:pip.bzl", "pip")
@@ -26,5 +23,5 @@ pip.parse(
     requirements_lock = "//:requirements_lock.txt",
 )
 
-use_repo(python, "python_3_9", "pythons_hub")
+use_repo(python, "python_3_9")
 use_repo(pip, "pip")
