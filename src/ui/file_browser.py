@@ -3,11 +3,12 @@ import tkinter as tk
 from tkinter import ttk, filedialog
 
 class FileBrowser(ttk.Frame):
-    def __init__(self, parent, initial_dir=None, on_file_select=None):
+    def __init__(self, parent, initial_dir=None, on_file_select=None, theme_manager=None):
         super().__init__(parent)
         self.parent = parent
         self.initial_dir = initial_dir
         self.on_file_select = on_file_select
+        self.theme_manager = theme_manager
         self.data_folder = None
         
         self.setup_ui()
@@ -48,7 +49,8 @@ class FileBrowser(ttk.Frame):
             selectmode='browse',
             yscrollcommand=vsb.set,
             xscrollcommand=hsb.set,
-            height=15
+            height=15,
+            show='tree'
         )
         self.file_tree.pack(fill=tk.BOTH, expand=True)
         
@@ -60,8 +62,11 @@ class FileBrowser(ttk.Frame):
         self.file_tree.heading('#0', text='Name', anchor=tk.W)
         
         # Configure tags for icons
-        self.file_tree.tag_configure('folder', foreground='lightblue')
-        self.file_tree.tag_configure('file', foreground='white')
+        if self.theme_manager:
+            theme = self.theme_manager.get_current_theme()
+            if theme:
+                self.file_tree.tag_configure('folder', foreground=theme['ui']['icon_fg'])
+                self.file_tree.tag_configure('file', foreground=theme['ui']['tree_fg'])
         
         # Bind events
         self.file_tree.bind('<<TreeviewSelect>>', self._on_file_select)
@@ -195,4 +200,33 @@ class FileBrowser(ttk.Frame):
             if self.file_tree.item(item, 'open'):
                 self.file_tree.item(item, open=False)
             else:
-                self.file_tree.item(item, open=True) 
+                self.file_tree.item(item, open=True)
+
+    def setup_file_tree(self):
+        """Setup the file tree widget."""
+        self.file_tree = ttk.Treeview(self, selectmode='browse', show='tree')
+        self.file_tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        
+        # Configure tags
+        theme = self.master.master.master.theme_manager.get_current_theme()
+        if theme:
+            self.file_tree.tag_configure('folder', foreground=theme['ui']['icon_fg'])
+            self.file_tree.tag_configure('file', foreground=theme['ui']['tree_fg'])
+        
+        # Add scrollbar
+        scrollbar = ttk.Scrollbar(self, orient=tk.VERTICAL, command=self.file_tree.yview)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        self.file_tree.configure(yscrollcommand=scrollbar.set)
+        
+        # Bind events
+        self.file_tree.bind('<<TreeviewSelect>>', self._on_file_select)
+        self.file_tree.bind('<Double-1>', self._on_tree_double_click)
+
+    def update_theme(self):
+        """Update the theme colors for the file browser."""
+        if self.theme_manager:
+            theme = self.theme_manager.get_current_theme()
+            if theme:
+                self.file_tree.tag_configure('folder', foreground=theme['ui']['icon_fg'])
+                self.file_tree.tag_configure('file', foreground=theme['ui']['tree_fg'])
+                self.refresh_files()  # Refresh to reapply tags 
