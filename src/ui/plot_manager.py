@@ -2,8 +2,59 @@ import tkinter as tk
 from tkinter import ttk
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
+import matplotlib
 from src.ui.cursor_manager import CursorManager
 from src.themes.theme_manager import ThemeManager
+
+class ThemedNavigationToolbar(NavigationToolbar2Tk):
+    def __init__(self, canvas, window, theme):
+        super().__init__(canvas, window)
+        self.theme = theme
+        self._apply_theme()
+    
+    def _apply_theme(self):
+        """Apply theme to all toolbar elements."""
+        # Get theme colors with fallbacks
+        bg_color = self.theme['bg']
+        text_color = self.theme['text']
+        select_bg = self.theme.get('select_bg', text_color)  # fallback to text color if select_bg not defined
+        
+        # Configure the main toolbar
+        self.configure(background=bg_color)
+        
+        # Update all buttons and labels
+        for widget in self.winfo_children():
+            if isinstance(widget, (tk.Button, tk.Label)):
+                widget.configure(
+                    background=bg_color,
+                    foreground=text_color,
+                    activebackground=select_bg,
+                    activeforeground=text_color,
+                    highlightbackground=bg_color,
+                    highlightcolor=text_color
+                )
+            elif isinstance(widget, tk.Frame):
+                widget.configure(background=bg_color)
+                for child in widget.winfo_children():
+                    if isinstance(child, (tk.Button, tk.Label)):
+                        child.configure(
+                            background=bg_color,
+                            foreground=text_color,
+                            activebackground=select_bg,
+                            activeforeground=text_color,
+                            highlightbackground=bg_color,
+                            highlightcolor=text_color
+                        )
+        
+        # Update matplotlib's internal icon colors
+        matplotlib.rcParams['savefig.facecolor'] = bg_color
+        matplotlib.rcParams['figure.facecolor'] = bg_color
+        matplotlib.rcParams['axes.facecolor'] = bg_color
+        matplotlib.rcParams['axes.edgecolor'] = text_color
+        matplotlib.rcParams['axes.labelcolor'] = text_color
+        matplotlib.rcParams['xtick.color'] = text_color
+        matplotlib.rcParams['ytick.color'] = text_color
+        matplotlib.rcParams['text.color'] = text_color
 
 class PlotManager(ttk.Frame):
     def __init__(self, parent, viewer):
@@ -33,7 +84,7 @@ class PlotManager(ttk.Frame):
         else:
             # Use Gruvbox Dark as fallback
             self.theme_manager = ThemeManager()
-            initial_theme = self.theme_manager.get_theme("White")
+            initial_theme = self.theme_manager.get_theme("Gruvbox Dark")
             if initial_theme:
                 self.current_theme = initial_theme['plot']
         
@@ -75,31 +126,11 @@ class PlotManager(ttk.Frame):
         
         # Update toolbar appearance
         if hasattr(self, 'toolbar'):
-            # Configure the toolbar's background
-            self.toolbar.configure(background=theme['bg'])
-            
-            # Update the main toolbar frame and all its children
-            for widget in self.toolbar.winfo_children():
-                if isinstance(widget, tk.Frame):
-                    widget.configure(background=theme['bg'])
-                    for child in widget.winfo_children():
-                        if isinstance(child, (tk.Button, tk.Label)):
-                            child.configure(
-                                background=theme['bg'],
-                                foreground=theme['text'],
-                                activebackground=theme['select_bg'],
-                                activeforeground=theme['text']
-                            )
-                        elif isinstance(child, ttk.Separator):
-                            style = ttk.Style()
-                            style.configure('Toolbar.TSeparator',
-                                          background=theme['text'])
-                            child.configure(style='Toolbar.TSeparator')
-                elif isinstance(widget, tk.Label):  # This handles the coordinate display
-                    widget.configure(
-                        background=theme['bg'],
-                        foreground=theme['text']
-                    )
+            # Always recreate the toolbar to ensure proper theming
+            self.toolbar.destroy()
+            self.toolbar = ThemedNavigationToolbar(self.canvas, self, theme)
+            self.toolbar.update()
+            self.toolbar.pack(side=tk.BOTTOM, fill=tk.X)
         
         # Update all ttk widgets in the control panel
         self._update_control_panel(theme)
@@ -110,8 +141,17 @@ class PlotManager(ttk.Frame):
                        background=theme['bg'])
         self.configure(style='Plot.TFrame')
         
-        # Redraw canvas
+        # Force a redraw of the canvas and update
         self.canvas.draw()
+        self.update_idletasks()
+        
+        # Reapply theme to cursor manager
+        if hasattr(self, 'cursor_manager'):
+            self.cursor_manager.set_theme(theme)
+            
+        # Redraw plot with current data if available
+        if self.current_data is not None:
+            self.update_plot()
 
     def _update_control_panel(self, theme):
         """Update the control panel widgets with the current theme."""
@@ -133,6 +173,9 @@ class PlotManager(ttk.Frame):
                         child.configure(style='TCheckbutton')
                     elif isinstance(child, ttk.Combobox):
                         child.configure(style='Theme.TCombobox')
+                        
+        # Force update
+        self.update_idletasks()
 
     def setup_plot(self):
         """Setup the matplotlib plot with enhanced cursor interaction."""
@@ -158,8 +201,8 @@ class PlotManager(ttk.Frame):
         self.canvas.draw()
         self.canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
         
-        # Add navigation toolbar
-        self.toolbar = NavigationToolbar2Tk(self.canvas, self)
+        # Add themed navigation toolbar
+        self.toolbar = ThemedNavigationToolbar(self.canvas, self, self.current_theme or self.theme_manager.get_theme("Gruvbox Dark")['plot'])
         self.toolbar.update()
         
         # Initialize cursor manager
@@ -169,7 +212,7 @@ class PlotManager(ttk.Frame):
         self.after(0, lambda: self.cursor_manager.set_theme(self.current_theme) if self.current_theme else None)
         
         # Add cursor instructions overlay
-        fallback_theme = self.theme_manager.get_theme("White")['plot']
+        fallback_theme = self.theme_manager.get_theme("Gruvbox Dark")['plot']
         self.cursor_overlay = tk.Label(
             self,
             text="Double-click to place cursors\nDrag cursors to move them",
@@ -211,7 +254,7 @@ class PlotManager(ttk.Frame):
         ).pack(side=tk.LEFT)
         
         # Use theme accent color for cursors or fallback to Gruvbox Dark
-        fallback_theme = self.theme_manager.get_theme("White")['plot']
+        fallback_theme = self.theme_manager.get_theme("Gruvbox Dark")['plot']
         default_color = self.current_theme.get('accent', fallback_theme['accent']) if self.current_theme else fallback_theme['accent']
         
         self.time_cursor_color = tk.StringVar(value=default_color)
@@ -293,7 +336,7 @@ class PlotManager(ttk.Frame):
         if self.current_theme:
             colors = self.current_theme['channel_colors']
         else:
-            theme = self.theme_manager.get_theme("White")
+            theme = self.theme_manager.get_theme("Gruvbox Dark")
             colors = theme['plot']['channel_colors'] if theme else ['#FFFFFF']
             
         for i, channel in enumerate([col for col in self.current_data.columns if col.startswith('CH')]):

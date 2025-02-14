@@ -4,8 +4,24 @@
     "bg": "#fbf1c7",
     "fg": "#3c3836",
     "select_bg": "#d5c4a1",
-    "frame_bg": "#ebdbb2",
-    "accent": "#79740e"
+    "frame_bg": "#f2e5bc",
+    "accent": "#79740e",
+    "tree_bg": "#fbf1c7",
+    "tree_fg": "#3c3836",
+    "tree_select_bg": "#d5c4a1",
+    "button_bg": "#ebdbb2",
+    "button_fg": "#3c3836",
+    "button_active_bg": "#d5c4a1",
+    "button_active_fg": "#3c3836",
+    "icon_fg": "#665c54",
+    "border": "#d5c4a1",
+    "input_bg": "#fbf1c7",
+    "input_fg": "#3c3836",
+    "label_bg": "#fbf1c7",
+    "label_fg": "#3c3836",
+    "scrollbar_bg": "#ebdbb2",
+    "scrollbar_fg": "#928374",
+    "plot_bg": "#fbf1c7"
   },
   "plot": {
     "bg": "#fbf1c7",
@@ -15,12 +31,12 @@
     "accent": "#79740e",
     "channel_colors": [
       "#79740e",
-      "#076678",
+      "#427b58",
       "#8f3f71",
       "#af3a03",
       "#9d0006",
       "#b57614",
-      "#427b58",
+      "#076678",
       "#3c3836"
     ]
   }

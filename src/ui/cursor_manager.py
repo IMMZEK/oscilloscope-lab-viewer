@@ -21,7 +21,7 @@ class CursorManager:
         self.update_cursor_positions()
 
     def _get_fallback_theme(self):
-        return self.theme_manager.get_theme("White")['plot']
+        return self.theme_manager.get_theme("Gruvbox Dark")['plot']
 
     def add_cursor(self, name, value, vertical=True, color=None):
         """Add a cursor line to the plot."""
